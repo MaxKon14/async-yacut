@@ -1,24 +1,20 @@
 import asyncio
-import os
+import urllib
+
 import aiohttp
-
-import json
-
-import requests
-from dotenv import load_dotenv
 
 from . import app
 
-load_dotenv()
+API_HOST = 'https://cloud-api.yandex.net/'
+API_VERSION = 'v1'
+REQUEST_UPLOAD_URL = f'{API_HOST}{API_VERSION}/disk/resources/upload'
+DOWNLOAD_LINK_URL = f'{API_HOST}{API_VERSION}/disk/resources/download'
 
+DISK_TOKEN = app.config['DISK_TOKEN']
 AUTH_HEADER = {
     'Authorization': f'OAuth {DISK_TOKEN}'
 }
-API_HOST = 'https://cloud-api.yandex.net/'
-API_VERSION = 'v1'
-DISK_INFO_URL = f'{API_HOST}{API_VERSION}/disk/'
-DISK_TOKEN = os.environ.get('DISK_TOKEN')
-REQUEST_UPLOAD_URL = f'{API_HOST}{API_VERSION}/disk/resources/upload'
+
 
 async def async_upload_files_to_disk(files):
     if files is not None:
@@ -34,32 +30,28 @@ async def async_upload_files_to_disk(files):
         return urls
 
 
-
 async def upload_file_and_get_url(session, file):
     payload = {
-        'path': f'app:/{file.name}',
+        'path': f'app:/{file.filename}',
         'overwrite': 'True'
     }
-    async with session.post(
+    async with session.get(
             REQUEST_UPLOAD_URL,
             headers=AUTH_HEADER,
             params=payload,
     ) as response:
-        upload_url = await response.json()['href']
+        upload_url = (await response.json())['href']
+
+    async with session.put(upload_url, data=file.stream) as response:
+        location = response.headers['Location']
+        location = urllib.parse.unquote(location)
+        location = location.replace('/disk', '')
 
 
-
-    async with session.post(
-            SHARING_LINK,
-            headers={
-                'Authorization': AUTH_HEADER,
-                'Content-Type': 'application/json',
-            },
-            json={'path': path}
+    async with session.get(
+            DOWNLOAD_LINK_URL,
+            headers=AUTH_HEADER,
+            params={'path': location},
     ) as response:
-        data = await response.json()
-        if 'url' not in data:
-            data = data['error']['shared_link_already_exists']['metadata']
-        url = data['url']
-        url = url.replace('&dl=0', '&raw=1')
-    return url
+        link = await response.json()['href']
+    return link
