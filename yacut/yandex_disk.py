@@ -42,7 +42,7 @@ async def upload_file_and_get_url(session, file):
     ) as response:
         upload_url = (await response.json())['href']
 
-    async with session.put(upload_url, data=file.stream) as response:
+    async with session.put(upload_url, data=file.read()) as response:
         location = response.headers['Location']
         location = urllib.parse.unquote(location)
         location = location.replace('/disk', '')
