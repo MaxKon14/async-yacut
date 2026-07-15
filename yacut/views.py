@@ -1,9 +1,10 @@
 from flask import flash, redirect, render_template, url_for
 
 from . import app, db
-from .forms import MainPageForm
+from .forms import MainPageForm, UploadForm
 from .models import URLMap
 from .utils import get_unique_short_id
+from .yandex_disk import async_upload_files_to_disk
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -32,3 +33,25 @@ def main_page_view():
 def redirect_view(short_id):
     url_map = URLMap.query.filter_by(short=short_id).first_or_404()
     return redirect(url_map.original)
+
+
+@app.route('/files', methods=['GET', 'POST'])
+async def files_view():
+    form = UploadForm()
+    if form.validate_on_submit():
+        files = form.files.data
+        urls = await async_upload_files_to_disk(files)
+        uploaded_files = []
+        for file, original in zip(files, urls):
+            short = get_unique_short_id()
+            url_map = URLMap(original=original, short=short)
+            db.session.add(url_map)
+            short_link = url_for(
+                'redirect_view', short_id=short, _external=True
+            )
+            uploaded_files.append((file.filename, short_link))
+        db.session.commit()
+        return render_template(
+            'files.html', form=form, uploaded_files=uploaded_files
+        )
+    return render_template('files.html', form=form)

@@ -3,7 +3,7 @@ from flask_wtf.file import FileRequired, MultipleFileField
 from wtforms import StringField, SubmitField, URLField
 from wtforms.validators import DataRequired, Length, Optional, Regexp
 
-from yacut.constants import CUSTOM_ID_MAX_LENGTH
+from .constants import CUSTOM_ID_MAX_LENGTH
 
 
 class MainPageForm(FlaskForm):

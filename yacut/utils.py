@@ -1,8 +1,8 @@
 import random
 import string
 
-from yacut.constants import AUTO_SHORT_ID_LENGTH
-from yacut.models import URLMap
+from .constants import AUTO_SHORT_ID_LENGTH
+from .models import URLMap
 
 ALPHABET = string.ascii_letters + string.digits
 

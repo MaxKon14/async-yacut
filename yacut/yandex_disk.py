@@ -32,7 +32,7 @@ async def async_upload_files_to_disk(files):
 
 async def upload_file_and_get_url(session, file):
     payload = {
-        'path': f'app:/{file.filename}',
+        'path': 'app:/' + file.filename,
         'overwrite': 'True'
     }
     async with session.get(
@@ -47,11 +47,10 @@ async def upload_file_and_get_url(session, file):
         location = urllib.parse.unquote(location)
         location = location.replace('/disk', '')
 
-
     async with session.get(
             DOWNLOAD_LINK_URL,
             headers=AUTH_HEADER,
             params={'path': location},
     ) as response:
-        link = await response.json()['href']
+        link = (await response.json())['href']
     return link
