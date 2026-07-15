@@ -32,7 +32,9 @@ def main_page_view():
 @app.route('/<short_id>')
 def redirect_view(short_id):
     url_map = URLMap.query.filter_by(short=short_id).first_or_404()
-    return redirect(url_map.original)
+    response = redirect(url_map.original)
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    return response
 
 
 @app.route('/files', methods=['GET', 'POST'])
