@@ -101,6 +101,9 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
+# Design mockup, no longer used by the app
+html/
+
 # Environments
 .env
 .venv
