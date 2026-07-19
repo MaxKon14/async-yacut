@@ -1,25 +1,10 @@
 from http import HTTPStatus
-import re
 
 from flask import jsonify, request, url_for
 
-from . import app, db
-from .constants import CUSTOM_ID_MAX_LENGTH
+from . import app
 from .error_handlers import InvalidAPIUsage
-from .models import URLMap
-from .utils import get_unique_short_id
-
-CUSTOM_ID_PATTERN = re.compile(r'^[A-Za-z0-9]*$')
-
-
-def validate_custom_id(custom_id):
-    if (
-        len(custom_id) > CUSTOM_ID_MAX_LENGTH
-        or not CUSTOM_ID_PATTERN.fullmatch(custom_id)
-    ):
-        raise InvalidAPIUsage(
-            'Указано недопустимое имя для короткой ссылки'
-        )
+from .models import ShortIdValidationError, URLMap
 
 
 @app.route('/api/id/', methods=['POST'])
@@ -27,25 +12,16 @@ def create_id_view():
     data = request.get_json()
     if 'url' not in data:
         raise InvalidAPIUsage('"url" является обязательным полем!')
-    custom_id = data.get('custom_id')
-    if custom_id:
-        validate_custom_id(custom_id)
-        if custom_id == 'files' or URLMap.query.filter_by(
-            short=custom_id
-        ).first() is not None:
-            raise InvalidAPIUsage(
-                'Предложенный вариант короткой ссылки уже существует.'
-            )
-        short = custom_id
-    else:
-        short = get_unique_short_id()
-    url_map = URLMap(original=data['url'], short=short)
-    db.session.add(url_map)
-    db.session.commit()
+    try:
+        url_map = URLMap.create(
+            original=data['url'], custom_id=data.get('custom_id')
+        )
+    except ShortIdValidationError as error:
+        raise InvalidAPIUsage(str(error))
     return jsonify({
         'url': url_map.original,
         'short_link': url_for(
-            'redirect_view', short_id=short, _external=True
+            'redirect_view', short_id=url_map.short, _external=True
         )
     }), HTTPStatus.CREATED
 

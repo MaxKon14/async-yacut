@@ -3,7 +3,7 @@ from flask_wtf.file import FileRequired, MultipleFileField
 from wtforms import StringField, SubmitField, URLField
 from wtforms.validators import DataRequired, Length, Optional, Regexp
 
-from .constants import CUSTOM_ID_MAX_LENGTH
+from .constants import CUSTOM_ID_MAX_LENGTH, CUSTOM_ID_PATTERN
 
 
 class MainPageForm(FlaskForm):
@@ -19,7 +19,7 @@ class MainPageForm(FlaskForm):
             Optional(),
             Length(max=CUSTOM_ID_MAX_LENGTH,
                    message='Указано недопустимо большое количество символов'),
-            Regexp(r'^[A-Za-z0-9]*$',
+            Regexp(CUSTOM_ID_PATTERN,
                    message='Допустимы только латинские буквы и цифры')
         ]
     )
